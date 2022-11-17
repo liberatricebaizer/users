@@ -1,26 +1,87 @@
-import { Button } from "bootstrap/dist/js/bootstrap.bundle";
 import React from "react";
-import { Fragment } from "react/cjs/react.production.min";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import Users from "./components/users";
 import "./App.css";
-import NavBar from "./components/NavBar/NavBar";
-import ContactList from "./components/contacts/ContactList/ContactList";
-import AddContact from "./components/contacts/AddContact/AddContact";
-import ViewContact from "./components/contacts/ViewContact/ViewContact";
-import EditContact from "./components/contacts/EditContact/EditContact";
+import AddUser from "./components/addUser";
 
-const App = () => {
+const App = (props) => {
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    await fetch("https://jsonplaceholder.typicode.com/users")
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const onAdd = async (name, email) => {
+    await fetch("https://jsonplaceholder.typicode.com/users", {
+      method: "POST",
+      body: JSON.stringify({
+        name: name,
+        email: email,
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    })
+      .then((res) => {
+        if (res.status !== 201) {
+          return;
+        } else {
+          return res.json();
+        }
+      })
+      .then((data) => {
+        setUsers((users) => [...users, data]);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const onDelete = async (id) => {
+    await fetch(`https://jsonplaceholder.typicode.com/users/${id}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (res.status !== 200) {
+          return;
+        } else {
+          setUsers(
+            users.filter((user) => {
+              return user.id !== id;
+            })
+          );
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+  console.log(users);
+
   return (
-    <Fragment>
-      <NavBar />
-      <Routes>
-        <Route path={"/"} element={<Navigate to={"/contacts/list"} />} />
-        <Route path={"/contacts/list"} element={<ContactList />} />
-        <Route path={"/contacts/add"} element={<AddContact />} />
-        <Route path={"/contacts/view/:contactId"} element={<ViewContact />} />
-        <Route path={"/contacts/edit/:contactId"} element={<EditContact />} />
-      </Routes>
-    </Fragment>
+    <div className="form">
+      <AddUser onAdd={onAdd} />
+      <div>
+        {users.map((user) => (
+          <Users
+            id={user.id}
+            key={user.id}
+            name={user.name}
+            email={user.email}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 
